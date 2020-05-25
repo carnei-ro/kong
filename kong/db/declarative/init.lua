@@ -79,12 +79,12 @@ function Config:parse_file(filename, accept, old_hash)
 end
 
 
-local function convert_nulls(tbl)
+local function convert_nulls(tbl, from, to)
   for k,v in pairs(tbl) do
-    if v == null_yaml then
-      tbl[k] = null
+    if v == from then
+      tbl[k] = to
     elseif type(v) == "table" then
-      tbl[k] = convert_nulls(v)
+      tbl[k] = convert_nulls(v, from, to)
     end
   end
   return tbl
@@ -111,6 +111,8 @@ function Config:parse_string(contents, filename, accept, old_hash)
     if not pok then
       err = dc_table
       dc_table = nil
+    elseif type(dc_table) == "table" then
+      convert_nulls(dc_table, null_yaml, null)
     end
 
   elseif accept.json and filename:match("json$") then
@@ -152,8 +154,6 @@ function Config:parse_string(contents, filename, accept, old_hash)
         (err and ": " .. err or "")
     return nil, err, { error = err }
   end
-
-  convert_nulls(dc_table)
 
   return self:parse_table(dc_table, new_hash)
 end
